@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "nodeVersionHint": 22,
+      "request": "launch",
+      "name": "Run Current File",
+      "program": "${file}",
+      "console": "integratedTerminal"
+    }
+  ]
+}
