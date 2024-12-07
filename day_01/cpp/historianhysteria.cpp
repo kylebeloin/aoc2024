@@ -4,7 +4,7 @@
 using namespace std;
 
 int main() {
-    string inputs;
+    string inputs = "";
     ifstream Inputs("input.txt");
     while (getline(Inputs, inputs)) {
         cout << inputs;
