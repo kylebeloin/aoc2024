@@ -8,13 +8,6 @@ struct Point {
     int y = 0;
 };
 
-enum Direction {
-    up,
-    down,
-    left,
-    right
-};
-
 struct Position {
     Point point;
     int index;
@@ -99,6 +92,7 @@ Position& getNext(Guard& guard, Grid& grid) {
             }
         }
     }
+
     if (guard.direction.y == 0) {
         // Moving right
         if (guard.direction.x == 1) {
@@ -118,7 +112,7 @@ Position& getNext(Guard& guard, Grid& grid) {
 };
 
 int main() {
-    ifstream File("inputs.txt");
+    ifstream File("test.txt");
     string inputs = "";
     Grid grid;
     Guard guard;
@@ -153,7 +147,7 @@ int main() {
         }
         count++;
     }
-    
+
     grid.dimensions.x = inputs.length();
     grid.dimensions.y = count;
 
@@ -176,7 +170,6 @@ int main() {
         }
         
         guard.position = grid.positions.at(nextPos.index);
-        draw(grid);
     }
 
 
