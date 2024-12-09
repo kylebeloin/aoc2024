@@ -1,7 +1,11 @@
 // @ts-check
+import { log } from "console";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+
+var loops = 0;
+var unique = new Set();
 
 class Vector2D {
   /**
@@ -122,26 +126,66 @@ class Grid {
 }
 
 class Guard {
+  static loops = new Set();
+  /**
+   * @type {Node|undefined}
+   */
+  start;
+
+  /**
+   * @type {Node|undefined}
+   */
+  end;
+
   /**
    * @type {Node|undefined}
    */
   #node;
+
   /**
    * @type {Vector2D}
    */
   direction = DIRECTION.UP;
 
   /**
-   * @type {Set.<Node>}
+   * @type {Set.<number>}
    */
   visited = new Set();
+
+  /**
+   * @type {Map<Vector2D, Set.<number>>}
+   */
+  paths = new Map([
+    [DIRECTION.UP, new Set()],
+    [DIRECTION.DOWN, new Set()],
+    [DIRECTION.LEFT, new Set()],
+    [DIRECTION.RIGHT, new Set()],
+  ]);
+
+  /**
+   * @type {boolean}
+   */
+  tracking;
+
+  /**
+   * @type {Node[]}
+   */
+  canonicalPath = [];
+
+  /**
+   * @type {Node|undefined}
+   */
+  get next() {
+    const next = this.node?.neighbours.get(this.direction);
+
+    return next;
+  }
 
   /**
    * @param {Node|undefined} node
    */
   set node(node) {
-    if (node !== undefined) this.visited.add(node);
-
+    if (node !== undefined) this.visited.add(node.index);
     this.#node = node;
   }
 
@@ -150,6 +194,22 @@ class Guard {
    */
   get node() {
     return this.#node;
+  }
+
+  /**
+   * @returns {boolean}
+   */
+  isLooping() {
+    const looping = this.paths
+      ?.get(this.direction)
+      ?.has(this?.next?.index ?? -1);
+    // If next exists in path
+    if (looping) {
+      Guard.loops.add(this.paths.get(this.direction));
+    }
+    return (
+      this.paths?.get(this.direction)?.has(this?.next?.index ?? -1) ?? false
+    );
   }
 
   turnRight() {
@@ -172,10 +232,25 @@ class Guard {
   }
 
   moveForward() {
-    while (this.node?.neighbours.get(this.direction)?.occupied) {
+    while (this.next?.occupied && !this.isLooping()) {
+      this.paths.get(this.direction)?.add(this.next?.index ?? -1);
       this.turnRight();
     }
-    this.node = this.#node?.neighbours.get(this.direction);
+    this.node = this.next;
+    if (this.tracking && this.node) this.canonicalPath.push(this.node);
+    this.paths.get(this.direction)?.add(this.node?.index ?? -1);
+  }
+
+  reset() {
+    this.node = this.start;
+    this.direction = DIRECTION.UP;
+    this.visited = new Set();
+    this.paths = new Map([
+      [DIRECTION.UP, new Set()],
+      [DIRECTION.DOWN, new Set()],
+      [DIRECTION.LEFT, new Set()],
+      [DIRECTION.RIGHT, new Set()],
+    ]);
   }
 
   constructor() {}
@@ -184,12 +259,91 @@ class Guard {
 /**
  *
  * @param {Guard} guard
+ * @param {boolean} saveEnd
  */
-function partOne(guard) {
-  while (guard.node !== undefined) {
+function partOne(guard, saveEnd = false) {
+  // if guard.node is undefined, we're oob
+  while (guard.next !== undefined && !guard.isLooping()) {
     guard.moveForward();
   }
-  console.log(guard.visited.size);
+  if (saveEnd) guard.end = guard.node;
+}
+
+function getDirectionCharacter(direction) {
+  switch (direction) {
+    case DIRECTION.UP:
+      return "^";
+    case DIRECTION.RIGHT:
+      return ">";
+    case DIRECTION.DOWN:
+      return "v";
+    case DIRECTION.LEFT:
+      return "<";
+    default:
+      return " ";
+  }
+}
+
+/**
+ *
+ * @param {Grid | undefined} grid
+ * @param {Guard} guard
+ */
+function logGrid(grid, guard) {
+  if (!grid) return;
+  for (let row = 0; row < grid.height; row++) {
+    let str = "";
+    for (let col = 0; col < grid.width; col++) {
+      const idx = row * grid.width + col;
+      str +=
+        grid.tiles[idx].index === guard.node?.index
+          ? getDirectionCharacter(guard.direction)
+          : grid.tiles[idx].occupied
+          ? "#"
+          : ".";
+    }
+    console.log(str);
+  }
+  console.log("\n");
+}
+
+/**
+ *
+ * @param {Guard} guard
+ * @param {number} index
+ */
+function partTwo(guard, index = 1) {
+  guard.reset();
+  if (guard.node) {
+    guard.node.grid.tiles[guard.canonicalPath[index].index].occupied = true;
+  }
+  // until the guard reaches the end of original path, look for loops.
+  while (!guard.isLooping() && guard.next !== undefined) {
+    partOne(guard);
+    //partOne would loop here
+  }
+  // A loop has been found, or we've reached the end of the path.
+  if (guard.isLooping()) {
+    loops += 1;
+    if (guard.node)
+      guard.node.grid.tiles[guard.canonicalPath[index].index].occupied = false;
+    unique.add(
+      guard?.node?.grid.tiles[guard.canonicalPath[index].index]?.index ?? -1
+    );
+    if (index + 1 < guard.canonicalPath.length) {
+      partTwo(guard, index + 1);
+    }
+
+    // We need to find the loop, and then remove it.
+    // We can do this by starting from the end, and moving backwards
+  } else {
+    if (guard.node)
+      guard.node.grid.tiles[guard.canonicalPath[index].index].occupied = false;
+
+    if (index + 1 < guard.canonicalPath.length) {
+      partTwo(guard, index + 1);
+    }
+  }
 }
 
 /**
@@ -215,12 +369,22 @@ for (let row = 0; row < grid.height; row++) {
       grid.tiles[idx].occupied = true;
     }
     if (str === "^") {
-      guard.node = grid.tiles[idx];
+      guard.node = guard.start = grid.tiles[idx];
       console.log(guard.node === grid.tiles[idx]);
     }
   }
 
   // assuming all lines are same length
 }
+console.time();
+guard.tracking = true;
+partOne(guard, true);
+console.timeEnd();
 
-partOne(guard);
+console.time();
+guard.tracking = false;
+partTwo(guard);
+console.log(loops);
+console.log(unique.size);
+console.log(Guard.loops.size);
+console.timeEnd();
