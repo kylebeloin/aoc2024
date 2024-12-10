@@ -327,9 +327,6 @@ function partTwo(guard, index = 1) {
     loops += 1;
     if (guard.node)
       guard.node.grid.tiles[guard.canonicalPath[index].index].occupied = false;
-    unique.add(
-      guard?.node?.grid.tiles[guard.canonicalPath[index].index]?.index ?? -1
-    );
     if (index + 1 < guard.canonicalPath.length) {
       partTwo(guard, index + 1);
     }
@@ -351,7 +348,7 @@ function partTwo(guard, index = 1) {
  */
 
 const file = fs.readFileSync(
-  `${fileURLToPath(path.dirname(import.meta.url))}/test.txt`,
+  `${fileURLToPath(path.dirname(import.meta.url))}/inputs.txt`,
   {
     encoding: "utf-8",
   }
