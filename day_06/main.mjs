@@ -76,54 +76,7 @@ class Node {
     this.#grid = grid;
     this.#position = position;
   }
-}
-
-class Grid {
-  /**
-   * @type {number}
-   */
-  width = 0;
-
-  /**
-   * @type {number}
-   */
-  height = 0;
-
-  /**
-   * @type {Node[]}
-   */
-  nodes = [];
-
-  /**
-   *
-   * @param {number} width
-   * @param {number} height
-   */
-  constructor(width, height) {
-    this.height = height;
-    this.width = width;
-    this.tiles = Array.from(
-      { length: width * height },
-      (_, i) => new Node(new Vector2D(i % width, Math.floor(i / height)), this)
-    );
-    for (let i = 0; i < this.tiles.length; i++) {
-      const tile = this.tiles[i];
-      const top =
-        tile.position.y > 0 ? this.tiles.at(tile.index - this.width) : null;
-      const left = tile.position.x > 0 ? this.tiles.at(tile.index - 1) : null;
-
-      if (top) {
-        tile.neighbours.set(DIRECTION.UP, top);
-        top.neighbours.set(DIRECTION.DOWN, tile);
-      }
-
-      if (left) {
-        tile.neighbours.set(DIRECTION.LEFT, left);
-        left.neighbours.set(DIRECTION.RIGHT, tile);
-      }
-    }
-  }
-}
+}–
 
 class Guard {
   static loops = new Set();

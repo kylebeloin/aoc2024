@@ -193,9 +193,7 @@ function partTwo(useCache = false) {
     let operands = inputs[input][1];
 
     const size = operands.length - 1;
-    const combos = useCache
-      ? cachedCombinations(operators, size)
-      : getCombinations(operators, size);
+    const combos = cachedCombinations(operators, size);
 
     for (let p = 0; p < combos.length; p++) {
       // [sum, product]
@@ -216,16 +214,13 @@ function partTwo(useCache = false) {
         const next = pattern[o](left, right);
         _operands.splice(o + 1, 1, next);
         _o++;
-        if (next > result) {
-          break;
-        }
-        if (next === result) {
+        if (next >= result) {
           break;
         }
       }
 
       // Found a combo, don't keep adding
-      if (_operands.at(_o) === result) {
+      if (_operands[_o] === result) {
         calibrationResult += result;
         break;
       }
